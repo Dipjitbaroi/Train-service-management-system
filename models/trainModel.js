@@ -5,6 +5,10 @@ const TrainSchema = new mongoose.Schema({
     type: String,
     required: true,
   },
+  trainSettings: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: "TrainSettings",
+  },
   stops: [
     {
       station: {
