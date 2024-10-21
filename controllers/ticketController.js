@@ -7,7 +7,6 @@ export const purchaseTicket = async (req, res) => {
   try {
     const { userId, trainId, from, to, totalSeats } = req.body;
 
-    // Find the user and train
     const user = await User.findById(userId);
     const train = await Train.findById(trainId).populate("trainSettings");
 
@@ -15,10 +14,8 @@ export const purchaseTicket = async (req, res) => {
       return res.status(404).json({ msg: "User or Train not found" });
     }
 
-    // Find the train settings
     const trainSettings = train.trainSettings;
 
-    // Calculate the distance between "from" and "to" stations
     const fromStop = trainSettings.stops.find(
       (stop) => stop.station.toString() === from
     );
@@ -35,20 +32,16 @@ export const purchaseTicket = async (req, res) => {
       return res.status(400).json({ msg: "Invalid station distance" });
     }
 
-    // Calculate the total fare
     const perUnitFare = distance * trainSettings.perKMTicketCost;
     const totalFare = perUnitFare * totalSeats;
 
-    // Check if the user has enough balance
     if (user.walletBalance < totalFare) {
       return res.status(400).json({ msg: "Insufficient wallet balance" });
     }
 
-    // Deduct the fare from the user's wallet
     user.walletBalance -= totalFare;
     await user.save();
 
-    // Create a wallet transaction (debit)
     const newTransaction = new WalletTransaction({
       user: userId,
       amount: totalFare,
@@ -59,7 +52,6 @@ export const purchaseTicket = async (req, res) => {
     const journeyDate = new Date(train.journeyDate);
     journeyDate.setMinutes(journeyDate.getMinutes() + fromStop.time);
 
-    // Create the ticket
     const newTicket = new Ticket({
       user: userId,
       from,
@@ -74,7 +66,6 @@ export const purchaseTicket = async (req, res) => {
 
     const savedTicket = await newTicket.save();
 
-    // Respond with the created ticket
     res.status(201).json({
       msg: "Ticket purchased successfully",
       ticket: savedTicket,
@@ -85,28 +76,24 @@ export const purchaseTicket = async (req, res) => {
 };
 
 export const getTicketsByUserId = async (req, res) => {
-  const { userId } = req.params; // Get userId from request parameters
-  const { fromDate, toDate } = req.query; // Get optional date range from query parameters
+  const { userId } = req.params;
+  const { fromDate, toDate } = req.query;
 
   try {
-    // Create filter object
     const filter = { user: userId };
 
-    // If fromDate is provided, add to filter
     if (fromDate) {
-      filter.journeyDate = { ...filter.journeyDate, $gte: new Date(fromDate) }; // Greater than or equal to fromDate
+      filter.journeyDate = { ...filter.journeyDate, $gte: new Date(fromDate) };
     }
 
-    // If toDate is provided, add to filter
     if (toDate) {
-      filter.journeyDate = { ...filter.journeyDate, $lte: new Date(toDate) }; // Less than or equal to toDate
+      filter.journeyDate = { ...filter.journeyDate, $lte: new Date(toDate) };
     }
 
-    // Fetch tickets for the specified user and populate relevant fields
     const tickets = await Ticket.find(filter)
-      .populate("user") // Populate user information
-      .populate("from") // Populate from station
-      .populate("to"); // Populate to station
+      .populate("user")
+      .populate("from")
+      .populate("to");
 
     if (!tickets || tickets.length === 0) {
       return res

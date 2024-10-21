@@ -22,9 +22,8 @@ export const getStations = async (req, res) => {
   }
 };
 
-// Get a station by ID
 export const getStationById = async (req, res) => {
-  const { id } = req.params; // Get the ID from the request parameters
+  const { id } = req.params;
 
   try {
     const station = await Station.findById(id);
@@ -40,9 +39,8 @@ export const getStationById = async (req, res) => {
   }
 };
 
-// Update a station
 export const updateStation = async (req, res) => {
-  const { id } = req.params; // Get the ID from the request parameters
+  const { id } = req.params;
   const { name, location, distance, center } = req.body;
 
   try {
@@ -54,7 +52,7 @@ export const updateStation = async (req, res) => {
         distance,
         center,
       },
-      { new: true, runValidators: true } // Return the updated document
+      { new: true, runValidators: true }
     );
 
     if (!updatedStation) {
@@ -71,9 +69,8 @@ export const updateStation = async (req, res) => {
   }
 };
 
-// Delete a station
 export const deleteStation = async (req, res) => {
-  const { id } = req.params; // Get the ID from the request parameters
+  const { id } = req.params;
 
   try {
     const deletedStation = await Station.findByIdAndDelete(id);

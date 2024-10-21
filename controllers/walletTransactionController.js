@@ -1,25 +1,20 @@
 import WalletTransaction from "../models/walletTransactionModel.js";
 
-// Get wallet transactions by user ID with optional date range
 export const getWalletTransactionsByUserId = async (req, res) => {
-  const { userId } = req.params; // Get the userId from the request parameters
-  const { fromDate, toDate } = req.query; // Get fromDate and toDate from query parameters
+  const { userId } = req.params;
+  const { fromDate, toDate } = req.query;
 
   try {
-    // Create filter object
     const filter = { user: userId };
 
-    // If fromDate is provided, add to filter
     if (fromDate) {
-      filter.date = { ...filter.date, $gte: new Date(fromDate) }; // Greater than or equal to fromDate
+      filter.date = { ...filter.date, $gte: new Date(fromDate) };
     }
 
-    // If toDate is provided, add to filter
     if (toDate) {
-      filter.date = { ...filter.date, $lte: new Date(toDate) }; // Less than or equal to toDate
+      filter.date = { ...filter.date, $lte: new Date(toDate) };
     }
 
-    // Fetch wallet transactions for the specified user and populate the user field
     const transactions = await WalletTransaction.find(filter).populate("user");
 
     if (!transactions || transactions.length === 0) {

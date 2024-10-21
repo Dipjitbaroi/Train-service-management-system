@@ -15,11 +15,11 @@ const TrainSettingsSchema = new mongoose.Schema({
     ref: "Station",
   },
   departureTimeFromOrigin: {
-    type: String, // Storing time as a string in "HH:mm" format
+    type: String,
     required: true,
     validate: {
       validator: function (v) {
-        return /^([0-1]?[0-9]|2[0-3]):[0-5][0-9]$/.test(v); // Validates "HH:mm" format
+        return /^([0-1]?[0-9]|2[0-3]):[0-5][0-9]$/.test(v);
       },
       message: (props) =>
         `${props.value} is not a valid time! Format should be HH:mm`,

@@ -1,6 +1,7 @@
 import User from "../models/userModel.js";
 import bcrypt from "bcryptjs";
 import jwt from "jsonwebtoken";
+import WalletTransaction from "../models/walletTransactionModel.js";
 
 export const register = async (req, res) => {
   const { name, email, password, admin = false } = req.body;
@@ -12,11 +13,7 @@ export const register = async (req, res) => {
     user = new User({ name, email, password, admin });
     await user.save();
 
-    const token = jwt.sign({ id: user.id }, process.env.JWT_SECRET, {
-      expiresIn: "1h",
-    });
     res.json({
-      token,
       user: { id: user.id, name: user.name, email: user.email },
     });
   } catch (err) {
@@ -66,31 +63,26 @@ export const deleteUser = async (req, res) => {
 };
 
 export const updateUser = async (req, res) => {
-  const { name, email, password } = req.body; // New data from request
-  const userId = req.user.id; // Get user ID from the request (must be authenticated)
+  const { name, email, password } = req.body;
+  const userId = req.user.id;
 
   try {
-    // Find the user by their ID
     const user = await User.findById(userId);
 
     if (!user) {
       return res.status(404).json({ msg: "User not found" });
     }
 
-    // Update fields if provided
     if (name) user.name = name;
     if (email) user.email = email;
 
-    // If the password is provided, hash it before saving
     if (password) {
       const salt = await bcrypt.genSalt(10);
       user.password = await bcrypt.hash(password, salt);
     }
 
-    // Save the updated user details
     await user.save();
 
-    // Return the updated user information (excluding password)
     res.json({
       msg: "User updated successfully",
       user: {
@@ -109,22 +101,18 @@ export const addMoney = async (req, res) => {
   const { userId, amount } = req.body;
 
   try {
-    // Validate input
     if (!userId || !amount || amount <= 0) {
       return res.status(400).json({ message: "Invalid input" });
     }
 
-    // Find user
     const user = await User.findById(userId);
     if (!user) {
       return res.status(404).json({ message: "User not found" });
     }
 
-    // Update wallet balance
     user.walletBalance += amount;
     await user.save();
 
-    // Create wallet transaction
     const transaction = new WalletTransaction({
       user: userId,
       amount,
@@ -133,7 +121,6 @@ export const addMoney = async (req, res) => {
     });
     await transaction.save();
 
-    // Respond with updated user info
     res.status(200).json({
       message: "Money added successfully",
       walletBalance: user.walletBalance,

@@ -2,13 +2,11 @@ import Train from "../models/trainModel.js";
 import TrainSettings from "../models/trainSettingsModel.js";
 import Station from "../models/stationModel.js";
 
-// Helper function to convert "HH:mm" to total minutes
 export const convertTimeToMinutes = (timeString) => {
   const [hours, minutes] = timeString.split(":").map(Number);
   return hours * 60 + minutes;
 };
 
-// Helper function to convert total minutes back to a Date object (assuming the same day)
 export const convertMinutesToTime = (minutes, baseDate = new Date()) => {
   const hours = Math.floor(minutes / 60);
   const mins = minutes % 60;
@@ -18,81 +16,12 @@ export const convertMinutesToTime = (minutes, baseDate = new Date()) => {
   return date;
 };
 
-// Function to create journeyDate (a Date object with departure time)
 export const getJourneyDateWithTime = (timeString) => {
-  const currentDate = new Date(); // Today's date
+  const currentDate = new Date();
   const [hours, minutes] = timeString.split(":").map(Number);
-  currentDate.setHours(hours, minutes, 0, 0); // Set the hours and minutes to match the departure time
-  return currentDate; // This is the journeyDate with the departure time
+  currentDate.setHours(hours, minutes, 0, 0);
+  return currentDate;
 };
-
-// export const addTrain = async (req, res) => {
-//   try {
-//     const {
-//       name,
-//       origin,
-//       destination,
-//       totalDistance,
-//       departureTimeFromOrigin,
-//       perKMTicketCost,
-//       stops,
-//     } = req.body;
-
-//     // Create a new TrainSettings document
-//     const newTrainSettings = new TrainSettings({
-//       name,
-//       origin,
-//       destination,
-//       totalDistance,
-//       departureTimeFromOrigin,
-//       perKMTicketCost,
-//       stops,
-//     });
-
-//     const savedTrainSettings = await newTrainSettings.save();
-//     const trainSettings = savedTrainSettings._id;
-
-//     // Convert departureTimeFromOrigin to minutes for calculation
-//     const departureTimeInMinutes = await convertTimeToMinutes(
-//       departureTimeFromOrigin
-//     );
-
-//     console.log(departureTimeInMinutes);
-
-//     // Create journeyDate by combining today's date with the departureTimeFromOrigin
-//     const journeyDate = getJourneyDateWithTime(departureTimeFromOrigin);
-
-//     // Calculate train stops arrival and departure times
-//     const trainStops = stops.map((stop) => {
-//       const arrivalTimeInMinutes = departureTimeInMinutes + stop.time; // arrivalTime = departureTime + stop.time
-//       const departureTimeInMinutesAtStop =
-//         arrivalTimeInMinutes + stop.standingTime; // departureTime = arrivalTime + standingTime
-//       return {
-//         station: stop.station,
-//         arrivalTime: convertMinutesToTime(arrivalTimeInMinutes),
-//         departureTime: convertMinutesToTime(departureTimeInMinutesAtStop),
-//       };
-//     });
-
-//     // Create a new Train document with the calculated stops
-//     const newTrain = new Train({
-//       name,
-//       trainSettings,
-//       journeyDate,
-//       stops: trainStops,
-//     });
-
-//     await newTrain.save();
-
-//     res.status(201).json({
-//       msg: "Train added successfully",
-//       trainSettings: savedTrainSettings,
-//       train: newTrain,
-//     });
-//   } catch (err) {
-//     res.status(500).json({ msg: "Server error", error: err.message });
-//   }
-// };
 
 export const addTrain = async (req, res) => {
   try {
@@ -101,12 +30,11 @@ export const addTrain = async (req, res) => {
       origin,
       destination,
       totalDistance,
-      departureTimeFromOrigin, // Time in HH:mm format
+      departureTimeFromOrigin,
       perKMTicketCost,
       stops,
     } = req.body;
 
-    // Create a new TrainSettings document
     const newTrainSettings = new TrainSettings({
       name,
       origin,
@@ -120,27 +48,22 @@ export const addTrain = async (req, res) => {
     const savedTrainSettings = await newTrainSettings.save();
     const trainSettings = savedTrainSettings._id;
 
-    // Parse journeyDate as today's date with departure time from origin
     const journeyDate = getJourneyDateWithTime(departureTimeFromOrigin);
 
-    // Calculate train stops arrival and departure times
     const trainStops = stops.map((stop) => {
-      // Calculate arrivalTime based on journeyDate + stop.time (time is assumed to be in minutes)
       const arrivalTime = new Date(journeyDate);
-      arrivalTime.setMinutes(arrivalTime.getMinutes() + stop.time); // Add stop.time (minutes) to journeyDate
+      arrivalTime.setMinutes(arrivalTime.getMinutes() + stop.time);
 
-      // Calculate departureTime based on arrivalTime + stop.standingTime
       const departureTime = new Date(arrivalTime);
-      departureTime.setMinutes(departureTime.getMinutes() + stop.standingTime); // Add standingTime to arrivalTime
+      departureTime.setMinutes(departureTime.getMinutes() + stop.standingTime);
 
       return {
         station: stop.station,
-        arrivalTime, // Store the calculated arrival time
-        departureTime, // Store the calculated departure time
+        arrivalTime,
+        departureTime,
       };
     });
 
-    // Create a new Train document with the calculated stops
     const newTrain = new Train({
       name,
       trainSettings,
@@ -148,7 +71,6 @@ export const addTrain = async (req, res) => {
       stops: trainStops,
     });
 
-    // Save the newly created train to the database
     await newTrain.save();
 
     res.status(201).json({
@@ -166,29 +88,25 @@ export const getTrains = async (req, res) => {
     req.query;
 
   try {
-    // Build the filter object based on query parameters
     const filter = {};
 
-    // Journey date filtering
     if (fromDate || toDate) {
       filter.journeyDate = {};
       if (fromDate) {
-        filter.journeyDate.$gte = new Date(fromDate); // Greater than or equal to 'from' date
+        filter.journeyDate.$gte = new Date(fromDate);
       }
       if (toDate) {
-        filter.journeyDate.$lte = new Date(toDate); // Less than or equal to 'to' date
+        filter.journeyDate.$lte = new Date(toDate);
       }
     }
 
-    // Search filtering by train name or station name
     if (search) {
       filter.$or = [
-        { name: { $regex: search, $options: "i" } }, // Search by train name
-        { "stops.station": { $regex: search, $options: "i" } }, // Optionally, search by station name
+        { name: { $regex: search, $options: "i" } },
+        { "stops.station": { $regex: search, $options: "i" } },
       ];
     }
 
-    // Destination filtering by station names
     if (fromDestination || toDestination) {
       const stationFilter = {};
 
@@ -197,7 +115,7 @@ export const getTrains = async (req, res) => {
           name: { $regex: fromDestination, $options: "i" },
         });
         if (fromStation) {
-          stationFilter["stops.station"] = fromStation._id; // Filter by 'fromDestination' station ID
+          stationFilter["stops.station"] = fromStation._id;
         }
       }
 
@@ -206,24 +124,22 @@ export const getTrains = async (req, res) => {
           name: { $regex: toDestination, $options: "i" },
         });
         if (toStation) {
-          // Ensure both fromDestination and toDestination are handled
           if (stationFilter["stops.station"]) {
             stationFilter["stops.station"] = {
               $all: [stationFilter["stops.station"], toStation._id],
-            }; // Trains stopping at both 'from' and 'to' stations
+            };
           } else {
-            stationFilter["stops.station"] = toStation._id; // Filter by 'toDestination' station ID if 'from' is not present
+            stationFilter["stops.station"] = toStation._id;
           }
         }
       }
 
-      Object.assign(filter, stationFilter); // Add the station filters to the main filter object
+      Object.assign(filter, stationFilter);
     }
 
-    // Find trains with optional filters and populate related trainSettings and station information
     const trains = await Train.find(filter)
-      .populate("trainSettings") // Populate trainSettings information
-      .populate("stops.station"); // Populate each station in stops
+      .populate("trainSettings")
+      .populate("stops.station");
 
     res.status(200).json(trains);
   } catch (err) {
@@ -232,7 +148,6 @@ export const getTrains = async (req, res) => {
   }
 };
 
-// Get all train settings
 export const getTrainSettings = async (req, res) => {
   try {
     const trainSettingsList = await TrainSettings.find().populate(
@@ -245,9 +160,8 @@ export const getTrainSettings = async (req, res) => {
   }
 };
 
-// Get train settings by ID
 export const getTrainSettingsById = async (req, res) => {
-  const { id } = req.params; // Get the ID from the request parameters
+  const { id } = req.params;
 
   try {
     const trainSettings = await TrainSettings.findById(id).populate(
@@ -265,9 +179,8 @@ export const getTrainSettingsById = async (req, res) => {
   }
 };
 
-// Update train settings
 export const updateTrainSettings = async (req, res) => {
-  const { id } = req.params; // Get the ID from the request parameters
+  const { id } = req.params;
   const {
     name,
     origin,
@@ -290,7 +203,7 @@ export const updateTrainSettings = async (req, res) => {
         perKMTicketCost,
         stops,
       },
-      { new: true, runValidators: true } // Return the updated document
+      { new: true, runValidators: true }
     );
 
     if (!updatedTrainSettings) {
@@ -307,9 +220,8 @@ export const updateTrainSettings = async (req, res) => {
   }
 };
 
-// Delete train settings
 export const deleteTrainSettings = async (req, res) => {
-  const { id } = req.params; // Get the ID from the request parameters
+  const { id } = req.params;
 
   try {
     const deletedTrainSettings = await TrainSettings.findByIdAndDelete(id);

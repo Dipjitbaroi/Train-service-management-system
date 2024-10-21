@@ -1,20 +1,26 @@
 import express from "express";
-import { addTrain } from "../controllers/trainController.js";
+import {
+  addTrain,
+  getTrains,
+  getTrainSettings,
+  getTrainSettingsById,
+  updateTrainSettings,
+  deleteTrainSettings,
+} from "../controllers/trainController.js";
+import { checkToken } from "../middleware/checkToken.js";
 
 const router = express.Router();
 
-router.post("/addTrain", addTrain);
+router.post("/add-train", checkToken, addTrain);
 
-// // Route to get all trains
-// router.get("/", getAllTrains);
+router.get("/", checkToken, getTrains);
 
-// // Route to get a train by ID
-// router.get("/:id", getTrainById);
+router.get("/train-settings", checkToken, getTrainSettings);
 
-// // Route to update a train by ID
-// router.put("/update:id", updateTrain);
+router.get("/train-settings/:id", checkToken, getTrainSettingsById);
 
-// // Route to delete a train by ID
-// router.delete("/:id", deleteTrain);
+router.put("/update-train-settings/:id", checkToken, updateTrainSettings);
+
+router.delete("/delete-train-settings/:id", checkToken, deleteTrainSettings);
 
 export default router;
