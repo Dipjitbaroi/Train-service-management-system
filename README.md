@@ -50,7 +50,7 @@ To run this project, you will need to add the following environment variables to
 `CORN_SCHEDULE`=`0 0 * * *`
 ## Roadmap
 
-I have already inserted many datas in this DB for tasting. But if you like to do any change or crude oparations by using these apis then follow these steps:
+I have already inserted many datas in this DB for testing. But if you like to do any change or crude oparations by using these apis then follow these steps:
 
 - Register to create user.
 
