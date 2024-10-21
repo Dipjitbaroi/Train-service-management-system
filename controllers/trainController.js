@@ -26,6 +26,74 @@ export const getJourneyDateWithTime = (timeString) => {
   return currentDate; // This is the journeyDate with the departure time
 };
 
+// export const addTrain = async (req, res) => {
+//   try {
+//     const {
+//       name,
+//       origin,
+//       destination,
+//       totalDistance,
+//       departureTimeFromOrigin,
+//       perKMTicketCost,
+//       stops,
+//     } = req.body;
+
+//     // Create a new TrainSettings document
+//     const newTrainSettings = new TrainSettings({
+//       name,
+//       origin,
+//       destination,
+//       totalDistance,
+//       departureTimeFromOrigin,
+//       perKMTicketCost,
+//       stops,
+//     });
+
+//     const savedTrainSettings = await newTrainSettings.save();
+//     const trainSettings = savedTrainSettings._id;
+
+//     // Convert departureTimeFromOrigin to minutes for calculation
+//     const departureTimeInMinutes = await convertTimeToMinutes(
+//       departureTimeFromOrigin
+//     );
+
+//     console.log(departureTimeInMinutes);
+
+//     // Create journeyDate by combining today's date with the departureTimeFromOrigin
+//     const journeyDate = getJourneyDateWithTime(departureTimeFromOrigin);
+
+//     // Calculate train stops arrival and departure times
+//     const trainStops = stops.map((stop) => {
+//       const arrivalTimeInMinutes = departureTimeInMinutes + stop.time; // arrivalTime = departureTime + stop.time
+//       const departureTimeInMinutesAtStop =
+//         arrivalTimeInMinutes + stop.standingTime; // departureTime = arrivalTime + standingTime
+//       return {
+//         station: stop.station,
+//         arrivalTime: convertMinutesToTime(arrivalTimeInMinutes),
+//         departureTime: convertMinutesToTime(departureTimeInMinutesAtStop),
+//       };
+//     });
+
+//     // Create a new Train document with the calculated stops
+//     const newTrain = new Train({
+//       name,
+//       trainSettings,
+//       journeyDate,
+//       stops: trainStops,
+//     });
+
+//     await newTrain.save();
+
+//     res.status(201).json({
+//       msg: "Train added successfully",
+//       trainSettings: savedTrainSettings,
+//       train: newTrain,
+//     });
+//   } catch (err) {
+//     res.status(500).json({ msg: "Server error", error: err.message });
+//   }
+// };
+
 export const addTrain = async (req, res) => {
   try {
     const {
@@ -33,7 +101,7 @@ export const addTrain = async (req, res) => {
       origin,
       destination,
       totalDistance,
-      departureTimeFromOrigin,
+      departureTimeFromOrigin, // Time in HH:mm format
       perKMTicketCost,
       stops,
     } = req.body;
@@ -52,27 +120,25 @@ export const addTrain = async (req, res) => {
     const savedTrainSettings = await newTrainSettings.save();
     const trainSettings = savedTrainSettings._id;
 
-    // Convert departureTimeFromOrigin to minutes for calculation
-    const departureTimeInMinutes = await convertTimeToMinutes(
-      departureTimeFromOrigin
-    );
-
-    console.log(departureTimeInMinutes);
+    // Parse journeyDate as today's date with departure time from origin
+    const journeyDate = getJourneyDateWithTime(departureTimeFromOrigin);
 
     // Calculate train stops arrival and departure times
     const trainStops = stops.map((stop) => {
-      const arrivalTimeInMinutes = departureTimeInMinutes + stop.time; // arrivalTime = departureTime + stop.time
-      const departureTimeInMinutesAtStop =
-        arrivalTimeInMinutes + stop.standingTime; // departureTime = arrivalTime + standingTime
+      // Calculate arrivalTime based on journeyDate + stop.time (time is assumed to be in minutes)
+      const arrivalTime = new Date(journeyDate);
+      arrivalTime.setMinutes(arrivalTime.getMinutes() + stop.time); // Add stop.time (minutes) to journeyDate
+
+      // Calculate departureTime based on arrivalTime + stop.standingTime
+      const departureTime = new Date(arrivalTime);
+      departureTime.setMinutes(departureTime.getMinutes() + stop.standingTime); // Add standingTime to arrivalTime
+
       return {
         station: stop.station,
-        arrivalTime: convertMinutesToTime(arrivalTimeInMinutes),
-        departureTime: convertMinutesToTime(departureTimeInMinutesAtStop),
+        arrivalTime, // Store the calculated arrival time
+        departureTime, // Store the calculated departure time
       };
     });
-
-    // Create journeyDate by combining today's date with the departureTimeFromOrigin
-    const journeyDate = getJourneyDateWithTime(departureTimeFromOrigin);
 
     // Create a new Train document with the calculated stops
     const newTrain = new Train({
@@ -82,6 +148,7 @@ export const addTrain = async (req, res) => {
       stops: trainStops,
     });
 
+    // Save the newly created train to the database
     await newTrain.save();
 
     res.status(201).json({
@@ -165,22 +232,22 @@ export const getTrains = async (req, res) => {
   }
 };
 
-// READ - Get all TrainSettings
+// Get all train settings
 export const getTrainSettings = async (req, res) => {
   try {
-    const trainSettings = await TrainSettings.find().populate(
+    const trainSettingsList = await TrainSettings.find().populate(
       "origin destination stops.station"
     );
-
-    res.status(200).json(trainSettings);
+    res.status(200).json(trainSettingsList);
   } catch (err) {
-    res.status(500).json({ msg: "Server error", error: err.message });
+    console.error(err);
+    res.status(500).json({ message: "Server error", error: err.message });
   }
 };
 
-// READ - Get TrainSettings by ID
+// Get train settings by ID
 export const getTrainSettingsById = async (req, res) => {
-  const { id } = req.params;
+  const { id } = req.params; // Get the ID from the request parameters
 
   try {
     const trainSettings = await TrainSettings.findById(id).populate(
@@ -188,20 +255,28 @@ export const getTrainSettingsById = async (req, res) => {
     );
 
     if (!trainSettings) {
-      return res.status(404).json({ msg: "Train settings not found" });
+      return res.status(404).json({ message: "Train settings not found" });
     }
 
     res.status(200).json(trainSettings);
   } catch (err) {
-    res.status(500).json({ msg: "Server error", error: err.message });
+    console.error(err);
+    res.status(500).json({ message: "Server error", error: err.message });
   }
 };
 
-// UPDATE - Update TrainSettings by ID
+// Update train settings
 export const updateTrainSettings = async (req, res) => {
-  const { id } = req.params;
-  const { name, origin, destination, totalDistance, perKMTicketCost, stops } =
-    req.body;
+  const { id } = req.params; // Get the ID from the request parameters
+  const {
+    name,
+    origin,
+    destination,
+    departureTimeFromOrigin,
+    totalDistance,
+    perKMTicketCost,
+    stops,
+  } = req.body;
 
   try {
     const updatedTrainSettings = await TrainSettings.findByIdAndUpdate(
@@ -210,41 +285,42 @@ export const updateTrainSettings = async (req, res) => {
         name,
         origin,
         destination,
+        departureTimeFromOrigin,
         totalDistance,
         perKMTicketCost,
         stops,
       },
-      { new: true, runValidators: true }
-    ).populate("origin destination stops.station");
+      { new: true, runValidators: true } // Return the updated document
+    );
 
     if (!updatedTrainSettings) {
-      return res.status(404).json({ msg: "Train settings not found" });
+      return res.status(404).json({ message: "Train settings not found" });
     }
 
     res.status(200).json({
-      msg: "Train settings updated successfully",
+      message: "Train settings updated successfully",
       trainSettings: updatedTrainSettings,
     });
   } catch (err) {
-    res.status(500).json({ msg: "Server error", error: err.message });
+    console.error(err);
+    res.status(500).json({ message: "Server error", error: err.message });
   }
 };
 
-// DELETE - Delete TrainSettings by ID
+// Delete train settings
 export const deleteTrainSettings = async (req, res) => {
-  const { id } = req.params;
+  const { id } = req.params; // Get the ID from the request parameters
 
   try {
-    const trainSettings = await TrainSettings.findById(id);
+    const deletedTrainSettings = await TrainSettings.findByIdAndDelete(id);
 
-    if (!trainSettings) {
-      return res.status(404).json({ msg: "Train settings not found" });
+    if (!deletedTrainSettings) {
+      return res.status(404).json({ message: "Train settings not found" });
     }
 
-    await trainSettings.deleteOne();
-
-    res.status(200).json({ msg: "Train settings deleted successfully" });
+    res.status(200).json({ message: "Train settings deleted successfully" });
   } catch (err) {
-    res.status(500).json({ msg: "Server error", error: err.message });
+    console.error(err);
+    res.status(500).json({ message: "Server error", error: err.message });
   }
 };

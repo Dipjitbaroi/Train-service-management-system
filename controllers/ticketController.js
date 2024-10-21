@@ -1,6 +1,5 @@
 import User from "../models/userModel.js";
 import Train from "../models/trainModel.js";
-import TrainSettings from "../models/trainSettingsModel.js";
 import Ticket from "../models/ticketModel.js";
 import WalletTransaction from "../models/walletTransactionModel.js";
 
@@ -57,6 +56,9 @@ export const purchaseTicket = async (req, res) => {
     });
     await newTransaction.save();
 
+    const journeyDate = new Date(train.journeyDate);
+    journeyDate.setMinutes(journeyDate.getMinutes() + fromStop.time);
+
     // Create the ticket
     const newTicket = new Ticket({
       user: userId,
@@ -67,7 +69,7 @@ export const purchaseTicket = async (req, res) => {
       perUnitFare,
       totalFare,
       distance,
-      journeyDate: train.journeyDate,
+      journeyDate,
     });
 
     const savedTicket = await newTicket.save();
@@ -79,5 +81,42 @@ export const purchaseTicket = async (req, res) => {
     });
   } catch (err) {
     res.status(500).json({ msg: "Server error", error: err.message });
+  }
+};
+
+export const getTicketsByUserId = async (req, res) => {
+  const { userId } = req.params; // Get userId from request parameters
+  const { fromDate, toDate } = req.query; // Get optional date range from query parameters
+
+  try {
+    // Create filter object
+    const filter = { user: userId };
+
+    // If fromDate is provided, add to filter
+    if (fromDate) {
+      filter.journeyDate = { ...filter.journeyDate, $gte: new Date(fromDate) }; // Greater than or equal to fromDate
+    }
+
+    // If toDate is provided, add to filter
+    if (toDate) {
+      filter.journeyDate = { ...filter.journeyDate, $lte: new Date(toDate) }; // Less than or equal to toDate
+    }
+
+    // Fetch tickets for the specified user and populate relevant fields
+    const tickets = await Ticket.find(filter)
+      .populate("user") // Populate user information
+      .populate("from") // Populate from station
+      .populate("to"); // Populate to station
+
+    if (!tickets || tickets.length === 0) {
+      return res
+        .status(404)
+        .json({ message: "No tickets found for this user." });
+    }
+
+    res.status(200).json(tickets);
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ message: "Server error", error: err.message });
   }
 };
