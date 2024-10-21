@@ -1,4 +1,5 @@
 import mongoose from "mongoose";
+import Station from "./stationModel.js";
 
 const TicketSchema = new mongoose.Schema({
   user: {
@@ -12,6 +13,22 @@ const TicketSchema = new mongoose.Schema({
   to: {
     type: mongoose.Schema.Types.ObjectId,
     ref: "Station",
+  },
+  train: {
+    type: String,
+    required: true,
+  },
+  totalSeats: {
+    type: Number,
+    required: true,
+  },
+  perUnitFare: {
+    type: Number,
+    required: true,
+  },
+  totalFare: {
+    type: Number,
+    required: true,
   },
   distance: {
     type: Number,

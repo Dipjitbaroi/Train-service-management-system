@@ -1,4 +1,5 @@
 import mongoose from "mongoose";
+import Station from "./stationModel.js";
 
 const TrainSettingsSchema = new mongoose.Schema({
   name: {

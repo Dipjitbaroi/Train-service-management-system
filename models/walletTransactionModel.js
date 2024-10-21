@@ -1,9 +1,10 @@
-import mongoose from 'mongoose';
+import mongoose from "mongoose";
+import User from "./userModel.js";
 
 const WalletTransactionSchema = new mongoose.Schema({
   user: {
     type: mongoose.Schema.Types.ObjectId,
-    ref: 'User',
+    ref: "User",
   },
   amount: {
     type: Number,
@@ -11,14 +12,17 @@ const WalletTransactionSchema = new mongoose.Schema({
   },
   type: {
     type: String,
-    enum: ['credit', 'debit'],
+    enum: ["credit", "debit"],
     required: true,
   },
   date: {
     type: Date,
     default: Date.now,
-  }
+  },
 });
 
-const WalletTransaction = mongoose.model('WalletTransaction', WalletTransactionSchema);
+const WalletTransaction = mongoose.model(
+  "WalletTransaction",
+  WalletTransactionSchema
+);
 export default WalletTransaction;

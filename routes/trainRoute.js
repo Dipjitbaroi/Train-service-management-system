@@ -1,15 +1,9 @@
 import express from "express";
-import {
-  createTrain,
-  createTrainSettings,
-} from "../controllers/trainController.js";
+import { addTrain } from "../controllers/trainController.js";
 
 const router = express.Router();
 
-// Route to create a new train
-router.post("/create", createTrainSettings);
-
-router.post("/addTrain", createTrain);
+router.post("/addTrain", addTrain);
 
 // // Route to get all trains
 // router.get("/", getAllTrains);

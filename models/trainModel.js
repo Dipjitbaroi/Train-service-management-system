@@ -1,8 +1,14 @@
 import mongoose from "mongoose";
+import TrainSettings from "./trainSettingsModel.js";
+import Station from "./stationModel.js";
 
 const TrainSchema = new mongoose.Schema({
   name: {
     type: String,
+    required: true,
+  },
+  journeyDate: {
+    type: Date,
     required: true,
   },
   trainSettings: {
