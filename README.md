@@ -40,7 +40,7 @@ To run this project, you will need to add the following environment variables to
 
 `JWT_SECRET`=`a9f25e9b54f0bcbd8f3b8a30dd8fe046ffb524dbf9b5b0baff6f2b39892704ebfb2c2564b27d8920af9b3219280b3ef07be8d80f242f1f2d170b8d9cf9a8a5bc`
 
-`MONGO_URI`=`mongodb+srv://dipjitbaroiofficial:45361319@cluster0.ma3m0.mongodb.net/TSMS`
+`MONGO_URI`=``
 
 `PORT`=`5000`
 
